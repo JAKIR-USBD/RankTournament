@@ -1,7 +1,7 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Tournament App with Team Medal Tally</title>
   <style>
     * {
@@ -158,60 +158,64 @@
 
 <div class="section">
   <h3>👤 Player Entry</h3>
-  <input type="text" id="playerName" placeholder="Player Name" />
-  <input type="text" id="teamName" placeholder="Team Name" />
+  <input type="text" id="playerName" placeholder="Player Name">
+  <input type="text" id="teamName" placeholder="Team Name">
+  <input type="file" id="playerImageFile" accept="image/*">
   <button onclick="addPlayer()">Add Player</button>
-  <table id="playerTable"><tr><th>#</th><th>Player</th><th>Team</th><th>Edit</th></tr></table>
+  <table id="playerTable">
+    <tr><th>#</th><th>Player</th><th>Team</th><th>Image</th><th>Edit</th></tr>
+  </table>
 </div>
-
-<div class="section">
+ <div class="section">
   <h4>⚔️ Competition</h4>
-  <input type="text" id="competitionName" placeholder="Competition Name" />
+  <input type="text" id="competitionName" placeholder="Competition Name">
   <label>Select Competitor:</label>
   <select id="competitorsDropdown" onchange="addCompetitorFromDropdown()"></select>
   <select id="competitors" multiple size="5"></select>
-  <input type="number" id="matchPrize" placeholder="Prize Pool ($)" value="300" />
-  
+  <input type="number" id="matchPrize" placeholder="Prize Pool ($)" value="300">
   <label>🏅 Winner:</label><select id="winnerSelect"></select>
   <label>🧈 Runner-up:</label><select id="runnerSelect"></select>
   <label>🥉 Third Place:</label><select id="thirdSelect"></select>
   <label>4th Place:</label><select id="fourthSelect"></select>
   <label>5th Place:</label><select id="fifthSelect"></select>
   <label>6th Place:</label><select id="sixthSelect"></select>
-  
   <button onclick="recordMatch()">Record Match</button>
-  
   <table id="matchTable">
     <tr><th>#</th><th>Name</th><th>Competitors</th><th>Prize</th><th>Winner</th><th>Runner-up</th><th>Third</th><th>4th</th><th>5th</th><th>6th</th><th>Action</th></tr>
   </table>
 </div>
   
- 
- 
-  
+
+<div class="section">
+  <h3>🔍 Search Leaderboard</h3>
+  <input type="text" id="searchInput" placeholder="Search by player or team..." oninput="updateLeaderboard()">
+</div>
 
 <div class="section">
   <h5>🏅 Leaderboard (Points Based)</h5>
-  
-  <div style="margin-bottom:10px;">
-  <input type="text" id="leaderboardSearch" placeholder="Search by player or team" oninput="filterLeaderboard()" style="width: 300px; padding: 8px; font-size: 14px;"/>
-</div>
   <table id="leaderboardTable">
-    <tr><th>Serial</th><th>Rank</th><th>Player</th><th>Team</th><th>Wins</th><th>Losses</th><th>Prize</th><th>Points</th><th>Gold</th><th>Silver</th><th>Bronze</th></tr>
+    <tr><th onclick="sortLeaderboard('rank')">Rank</th><th onclick="sortLeaderboard('name')">Player</th><th onclick="sortLeaderboard('team')">Team</th><th>Wins</th><th>Losses</th><th>Prize</th><th onclick="sortLeaderboard('points')">Points</th><th>Gold</th><th>Silver</th><th>Bronze</th></tr>
   </table>
 </div>
 
- 
-
 <div class="section">
-  <h4>📅 Monthly Top 20</h4>
-  <table id="monthlyTop"><tr><th>Rank</th><th>Player</th><th>Team</th><th>Points</th></tr></table>
+  <h4>💼 Team Medal Tally</h4>
+  <table id="teamTally">
+    <tr><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>
+  </table>
+</div>
+  
+  <div class="section">
+  <h5>📅 Monthly Top 16 Teams</h5>
+  <select id="monthSelector" onchange="viewSelectedMonthlyTop16()">
+    <option value="">-- Select Month --</option>
+  </select>
+  <table id="monthlyTop16Table">
+    <tr><th>Rank</th><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>
+  </table>
 </div>
 
-<div class="section">
-  <h5>💼 Team Medal Tally</h5>
-  <table id="teamTally"><tr><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr></table>
-</div>
+  
 
 <script>
 let players = JSON.parse(localStorage.getItem("players")) || [];
@@ -227,35 +231,131 @@ function saveToStorage() {
 function addPlayer() {
   const name = document.getElementById("playerName").value.trim();
   const team = document.getElementById("teamName").value.trim();
+  const fileInput = document.getElementById("playerImageFile");
+  const file = fileInput.files[0];
+
   if (name && !players.find(p => p.name === name)) {
-    players.push({ name, team });
-    stats[name] = { wins: 0, losses: 0, prize: 0, points: 0, gold: 0, silver: 0, bronze: 0 };
-    updateAll();
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        players.push({ name, team, image: e.target.result });
+        stats[name] = { wins: 0, losses: 0, prize: 0, points: 0, gold: 0, silver: 0, bronze: 0 };
+        updateAll();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      players.push({ name, team, image: "" });
+      stats[name] = { wins: 0, losses: 0, prize: 0, points: 0, gold: 0, silver: 0, bronze: 0 };
+      updateAll();
+    }
   }
+
   document.getElementById("playerName").value = "";
   document.getElementById("teamName").value = "";
-}
-
-function updateAll() {
-  saveToStorage();
-  updatePlayerTable();
-  updateSelects();
-  updateLeaderboard();
-  updateMatchTable();
-  updateTop20();
-  updateTeamTally();
+  document.getElementById("playerImageFile").value = "";
 }
 
 function updatePlayerTable() {
   const table = document.getElementById("playerTable");
-  table.innerHTML = "<tr><th>#</th><th>Player</th><th>Team</th><th>Edit</th></tr>";
+  table.innerHTML = "<tr><th>#</th><th>Player</th><th>Team</th><th>Image</th><th>Edit</th></tr>";
   players.forEach((p, i) => {
     table.innerHTML += `<tr>
       <td>${i + 1}</td>
       <td contenteditable onblur="editName(${i}, this.innerText)">${p.name}</td>
       <td contenteditable onblur="editTeam(${i}, this.innerText)">${p.team}</td>
+      <td><img src="${p.image || ''}" width="50" height="50" onclick="editPlayerImage(${i})" style="cursor:pointer;" title="Click to edit image" onerror="this.src='https://via.placeholder.com/50'"/></td>
+
       <td><button onclick="removePlayer(${i})">❌</button></td>
     </tr>`;
+  });
+}
+  
+ function recordMatch() {
+  const name = document.getElementById("competitionName").value.trim();
+  const comp = Array.from(document.getElementById("competitors").selectedOptions).map(o => o.value);
+  const prize = parseFloat(document.getElementById("matchPrize").value);
+  const win = document.getElementById("winnerSelect").value;
+  const run = document.getElementById("runnerSelect").value;
+  const third = document.getElementById("thirdSelect").value;
+  const fourth = document.getElementById("fourthSelect").value;
+  const fifth = document.getElementById("fifthSelect").value;
+  const sixth = document.getElementById("sixthSelect").value;
+
+  const all = [win, run, third, fourth, fifth, sixth];
+  if (new Set(all).size < 6 || all.includes("")) {
+    alert("Select 6 different placements."); return;
+  }
+
+  stats[win].wins++; stats[win].points += 5; stats[win].gold++;
+  stats[run].wins++; stats[run].points += 3; stats[run].silver++;
+  stats[third].wins++; stats[third].points += 2; stats[third].bronze++;
+  stats[fourth].points += 1;
+  stats[fifth].points += 1;
+  stats[sixth].points += 1;
+
+  players.forEach(p => { if (!all.includes(p.name)) stats[p.name].losses++; });
+
+  stats[win].prize += prize * 0.40;
+  stats[run].prize += prize * 0.25;
+  stats[third].prize += prize * 0.15;
+  stats[fourth].prize += prize * 0.10;
+  stats[fifth].prize += prize * 0.06;
+  stats[sixth].prize += prize * 0.04;
+
+  matches.push({ name, comp, prize, win, run, third, fourth, fifth, sixth });
+  updateAll();
+}
+
+function editPlayerImage(index) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        players[index].image = e.target.result;
+        updateAll();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+}
+  
+
+function updateLeaderboard() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = players.filter(p =>
+    p.name.toLowerCase().includes(input) || p.team.toLowerCase().includes(input)
+  );
+  const table = document.getElementById("leaderboardTable");
+  table.innerHTML = "<tr><th>Rank</th><th>Player</th><th>Team</th><th>Wins</th><th>Losses</th><th>Prize</th><th>Points</th><th>Gold</th><th>Silver</th><th>Bronze</th></tr>";
+  const sorted = filtered.map(p => ({ ...p, ...stats[p.name] })).sort((a, b) => b.points - a.points);
+  sorted.forEach((p, i) => {
+    let cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    table.innerHTML += `<tr class="${cls}"><td>${i + 1}</td><td>${p.name}</td><td>${p.team}</td>
+      <td>${p.wins}</td><td>${p.losses}</td><td>$${p.prize.toFixed(2)}</td><td>${p.points}</td>
+      <td>${p.gold}</td><td>${p.silver}</td><td>${p.bronze}</td></tr>`;
+  });
+}
+
+function updateTeamTally() {
+  const tally = {};
+  players.forEach(p => {
+    if (!tally[p.team]) tally[p.team] = { gold: 0, silver: 0, bronze: 0, points: 0 };
+    const s = stats[p.name];
+    tally[p.team].gold += s.gold;
+    tally[p.team].silver += s.silver;
+    tally[p.team].bronze += s.bronze;
+    tally[p.team].points += s.points;
+  });
+  const table = document.getElementById("teamTally");
+  table.innerHTML = "<tr><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>";
+  Object.keys(tally).sort((a, b) => tally[b].points - tally[a].points).forEach(team => {
+    const t = tally[team];
+    table.innerHTML += `<tr><td>${team}</td><td>${t.gold}</td><td>${t.silver}</td><td>${t.bronze}</td><td>${t.points}</td></tr>`;
   });
 }
 
@@ -278,181 +378,8 @@ function removePlayer(i) {
   players.splice(i, 1);
   updateAll();
 }
-
-function updateSelects() {
-  const selects = ["competitorsDropdown", "winnerSelect", "runnerSelect", "thirdSelect", "fourthSelect", "fifthSelect", "sixthSelect"];
-  selects.forEach(id => document.getElementById(id).innerHTML = "");
-  players.forEach(p => {
-    selects.forEach(id => {
-      const opt = new Option(`${p.name} (${p.team})`, p.name);
-      document.getElementById(id).appendChild(opt.cloneNode(true));
-    });
-  });
-  updateCompetitorsList();
-}
-
-function updateCompetitorsList() {
-  const list = document.getElementById("competitors");
-  list.innerHTML = "";
-  players.forEach(p => {
-    const opt = new Option(`${p.name} (${p.team})`, p.name);
-    list.appendChild(opt);
-  });
-}
-
-function addCompetitorFromDropdown() {
-  const dropdown = document.getElementById("competitorsDropdown");
-  const selected = dropdown.value;
-  const list = document.getElementById("competitors");
-  if ([...list.options].some(opt => opt.value === selected)) return;
-  const opt = new Option(`${selected}`, selected);
-  list.appendChild(opt);
-  dropdown.selectedIndex = 0;
-}
-
-function recordMatch() {
-  const name = document.getElementById("competitionName").value.trim();
-  const comp = Array.from(document.getElementById("competitors").selectedOptions).map(o => o.value);
-  const prize = parseFloat(document.getElementById("matchPrize").value);
-  const win = document.getElementById("winnerSelect").value;
-  const run = document.getElementById("runnerSelect").value;
-  const third = document.getElementById("thirdSelect").value;
-  const fourth = document.getElementById("fourthSelect").value;
-  const fifth = document.getElementById("fifthSelect").value;
-  const sixth = document.getElementById("sixthSelect").value;
-
-  const all = [win, run, third, fourth, fifth, sixth];
-  if (new Set(all).size < 6 || all.includes("")) {
-    alert("Select 6 different placements."); return;
-  }
-
-  // Reset points if missing from stats for new players
-  all.forEach(p => {
-    if (!stats[p]) stats[p] = { wins: 0, losses: 0, prize: 0, points: 0, gold: 0, silver: 0, bronze: 0 };
-  });
-
-  stats[win].wins++; stats[win].points += 5; stats[win].gold++;
-  stats[run].wins++; stats[run].points += 3; stats[run].silver++;
-  stats[third].wins++; stats[third].points += 2; stats[third].bronze++;
-  stats[fourth].points += 1;
-  stats[fifth].points += 1;
-  stats[sixth].points += 1;  // 6th gets 1 point
-
-  players.forEach(p => { if (!all.includes(p.name)) stats[p.name].losses++; });
-
-  stats[win].prize += prize * 0.40;
-  stats[run].prize += prize * 0.25;
-  stats[third].prize += prize * 0.15;
-  stats[fourth].prize += prize * 0.10;
-  stats[fifth].prize += prize * 0.06;
-  stats[sixth].prize += prize * 0.04;
-
-  matches.push({ name, comp, prize, win, run, third, fourth, fifth, sixth });
-  updateAll();
-}
-
-function updateLeaderboard() {
-  const searchTerm = document.getElementById("leaderboardSearch")?.value.toLowerCase() || "";
-
-  // Filter players by search term on name or team
-  let filtered = [...players].filter(p => 
-    p.name.toLowerCase().includes(searchTerm) || p.team.toLowerCase().includes(searchTerm)
-  );
-
-  // Sort by points descending
-  const sorted = filtered.map(p => ({ ...p, ...stats[p.name] }))
-    .sort((a, b) => b.points - a.points);
-
-  const table = document.getElementById("leaderboardTable");
-  table.innerHTML = "<tr><th>Serial</th><th>Rank</th><th>Player</th><th>Team</th><th>Wins</th><th>Losses</th><th>Prize ($)</th><th>Points</th><th>Gold</th><th>Silver</th><th>Bronze</th></tr>";
-
-  sorted.forEach((p, i) => {
-    let cls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-
-    table.innerHTML += `<tr class="${cls}">
-      <td>${i + 1}</td>
-      <td>${i + 1}</td>
-      <td>${p.name}</td>
-      <td>${p.team}</td>
-      <td>${p.wins}</td>
-      <td>${p.losses}</td>
-      <td contenteditable="true" onblur="editPrize('${p.name}', this.innerText)">$${p.prize.toFixed(2)}</td>
-      <td contenteditable="true" onblur="editPoints('${p.name}', this.innerText)">${p.points}</td>
-      <td>${p.gold}</td>
-      <td>${p.silver}</td>
-      <td>${p.bronze}</td>
-    </tr>`;
-  });
-}
-
-
-function deleteMatch(index) {
-  if (!confirm("Are you sure you want to delete this match?")) return;
-  matches.splice(index, 1);
-  updateAll();
-}
-
-function updateTop20() {
-  const top = [...players].map(p => ({ ...p, points: stats[p.name].points }))
-    .sort((a, b) => b.points - a.points).slice(0, 20);
   
-  localStorage.setItem("monthlyTop20", JSON.stringify(top));
-  
-  renderTopTable("monthlyTop", top);
-}
-
-function renderTopTable(id, data) {
-  const table = document.getElementById(id);
-  table.innerHTML = "<tr><th>Rank</th><th>Player</th><th>Team</th><th>Points</th></tr>";
-  data.forEach((p, i) => {
-    table.innerHTML += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.team}</td><td>${p.points}</td></tr>`;
-  });
-}
-
- function editPrize(playerName, value) {
-  // Remove $ if present and parse float
-  let val = value.replace(/\$/g, '').trim();
-  let num = parseFloat(val);
-  if (isNaN(num) || num < 0) {
-    alert("Invalid prize value. Please enter a positive number.");
-    updateLeaderboard();
-    return;
-  }
-  stats[playerName].prize = num;
-  saveToStorage();
-  updateLeaderboard();
-}
-
-function editPoints(playerName, value) {
-  let num = parseInt(value.trim());
-  if (isNaN(num) || num < 0) {
-    alert("Invalid points value. Please enter a non-negative integer.");
-    updateLeaderboard();
-    return;
-  }
-  stats[playerName].points = num;
-  saveToStorage();
-  updateLeaderboard();
-}
-
-  function filterLeaderboard() {
-  updateLeaderboard();
-}
-
-  
-  
-  
-function updateMatchTable() {
-  const table = document.getElementById("matchTable");
-  table.innerHTML = "<tr><th>#</th><th>Name</th><th>Competitors</th><th>Prize</th><th>Winner</th><th>Runner-up</th><th>Third</th><th>4th</th><th>5th</th><th>6th</th><th>Action</th></tr>";
-  matches.forEach((m, i) => {
-    table.innerHTML += `<tr><td>${i + 1}</td><td>${m.name}</td><td>${m.comp.join(", ")}</td><td>$${m.prize}</td>
-      <td>${m.win}</td><td>${m.run}</td><td>${m.third}</td><td>${m.fourth}</td><td>${m.fifth}</td><td>${m.sixth}</td>
-      <td><button onclick="deleteMatch(${i})">Delete</button></td></tr>`;
-  });
-}
-
-function updateTeamTally() {
+  function saveMonthlyTop16Teams() {
   const tally = {};
   players.forEach(p => {
     if (!tally[p.team]) tally[p.team] = { gold: 0, silver: 0, bronze: 0, points: 0 };
@@ -462,16 +389,66 @@ function updateTeamTally() {
     tally[p.team].bronze += s.bronze;
     tally[p.team].points += s.points;
   });
-  const table = document.getElementById("teamTally");
-  table.innerHTML = "<tr><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>";
-  Object.keys(tally).sort((a, b) => tally[b].points - tally[a].points).forEach(team => {
-    const t = tally[team];
-    table.innerHTML += `<tr><td>${team}</td><td>${t.gold}</td><td>${t.silver}</td><td>${t.bronze}</td><td>${t.points}</td></tr>`;
+
+  const sortedTeams = Object.entries(tally)
+    .sort((a, b) => b[1].points - a[1].points)
+    .slice(0, 16)
+    .map(([team, data], index) => ({
+      rank: index + 1,
+      team,
+      ...data
+    }));
+
+  const now = new Date();
+  const monthKey = `monthlyTop16-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  localStorage.setItem(monthKey, JSON.stringify(sortedTeams));
+  updateMonthDropdown(); // update the dropdown list
+}
+
+function updateMonthDropdown() {
+  const dropdown = document.getElementById("monthSelector");
+  const allKeys = Object.keys(localStorage).filter(k => k.startsWith("monthlyTop16-"));
+  dropdown.innerHTML = `<option value="">-- Select Month --</option>`;
+  allKeys.sort().reverse().forEach(k => {
+    const label = k.replace("monthlyTop16-", "").replace("-", " / ");
+    dropdown.innerHTML += `<option value="${k}">${label}</option>`;
   });
 }
 
-updateAll();
-</script>
+function viewSelectedMonthlyTop16() {
+  const key = document.getElementById("monthSelector").value;
+  const data = JSON.parse(localStorage.getItem(key)) || [];
+  const table = document.getElementById("monthlyTop16Table");
+  table.innerHTML = "<tr><th>Rank</th><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>";
+  data.forEach(team => {
+    table.innerHTML += `<tr>
+      <td>${team.rank}</td>
+      <td>${team.team}</td>
+      <td>${team.gold}</td>
+      <td>${team.silver}</td>
+      <td>${team.bronze}</td>
+      <td>${team.points}</td>
+    </tr>`;
+  });
+}
 
+  
+  
+
+function updateAll() {
+  saveToStorage();
+  updatePlayerTable();
+  updateLeaderboard();
+  updateTeamTally();
+  saveMonthlyTop16Teams();
+  updateMonthDropdown();
+}
+
+
+updateAll();
+  updateMonthDropdown();
+
+</script>
 </body>
 </html>
+                        
