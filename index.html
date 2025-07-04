@@ -256,6 +256,8 @@ function updateAll() {
   updateMatchTable();
   updateTop20();
   updateTeamTally();
+  saveMonthlyTop16Teams();
+  updateMonthDropdown();
 }
 
 function updatePlayerTable() {
@@ -275,7 +277,8 @@ function editName(i, name) {
   const old = players[i].name;
   if (!players.find(p => p.name === name)) {
     players[i].name = name;
-    stats[name] = stats[old]; delete stats[old];
+    stats[name] = stats[old];
+    delete stats[old];
     updateAll();
   }
 }
@@ -338,7 +341,6 @@ function recordMatch() {
     alert("Select 6 different placements."); return;
   }
 
-  // Reset points if missing from stats for new players
   all.forEach(p => {
     if (!stats[p]) stats[p] = { wins: 0, losses: 0, prize: 0, points: 0, gold: 0, silver: 0, bronze: 0 };
   });
@@ -348,7 +350,7 @@ function recordMatch() {
   stats[third].wins++; stats[third].points += 2; stats[third].bronze++;
   stats[fourth].points += 1;
   stats[fifth].points += 1;
-  stats[sixth].points += 1;  // 6th gets 1 point
+  stats[sixth].points += 1;
 
   players.forEach(p => { if (!all.includes(p.name)) stats[p.name].losses++; });
 
@@ -366,12 +368,10 @@ function recordMatch() {
 function updateLeaderboard() {
   const searchTerm = document.getElementById("leaderboardSearch")?.value.toLowerCase() || "";
 
-  // Filter players by search term on name or team
-  let filtered = [...players].filter(p => 
+  let filtered = [...players].filter(p =>
     p.name.toLowerCase().includes(searchTerm) || p.team.toLowerCase().includes(searchTerm)
   );
 
-  // Sort by points descending
   const sorted = filtered.map(p => ({ ...p, ...stats[p.name] }))
     .sort((a, b) => b.points - a.points);
 
@@ -397,7 +397,6 @@ function updateLeaderboard() {
   });
 }
 
-
 function deleteMatch(index) {
   if (!confirm("Are you sure you want to delete this match?")) return;
   matches.splice(index, 1);
@@ -407,9 +406,8 @@ function deleteMatch(index) {
 function updateTop20() {
   const top = [...players].map(p => ({ ...p, points: stats[p.name].points }))
     .sort((a, b) => b.points - a.points).slice(0, 20);
-  
+
   localStorage.setItem("monthlyTop20", JSON.stringify(top));
-  
   renderTopTable("monthlyTop", top);
 }
 
@@ -421,12 +419,11 @@ function renderTopTable(id, data) {
   });
 }
 
- function editPrize(playerName, value) {
-  // Remove $ if present and parse float
+function editPrize(playerName, value) {
   let val = value.replace(/\$/g, '').trim();
   let num = parseFloat(val);
   if (isNaN(num) || num < 0) {
-    alert("Invalid prize value. Please enter a positive number.");
+    alert("Invalid prize value.");
     updateLeaderboard();
     return;
   }
@@ -438,7 +435,7 @@ function renderTopTable(id, data) {
 function editPoints(playerName, value) {
   let num = parseInt(value.trim());
   if (isNaN(num) || num < 0) {
-    alert("Invalid points value. Please enter a non-negative integer.");
+    alert("Invalid points value.");
     updateLeaderboard();
     return;
   }
@@ -447,13 +444,10 @@ function editPoints(playerName, value) {
   updateLeaderboard();
 }
 
-  function filterLeaderboard() {
+function filterLeaderboard() {
   updateLeaderboard();
 }
 
-  
-  
-  
 function updateMatchTable() {
   const table = document.getElementById("matchTable");
   table.innerHTML = "<tr><th>#</th><th>Name</th><th>Competitors</th><th>Prize</th><th>Winner</th><th>Runner-up</th><th>Third</th><th>4th</th><th>5th</th><th>6th</th><th>Action</th></tr>";
@@ -481,8 +475,8 @@ function updateTeamTally() {
     table.innerHTML += `<tr><td>${team}</td><td>${t.gold}</td><td>${t.silver}</td><td>${t.bronze}</td><td>${t.points}</td></tr>`;
   });
 }
-  
-  function saveMonthlyTop16Teams() {
+
+function saveMonthlyTop16Teams() {
   const tally = {};
   players.forEach(p => {
     if (!tally[p.team]) tally[p.team] = { gold: 0, silver: 0, bronze: 0, points: 0 };
@@ -505,7 +499,6 @@ function updateTeamTally() {
   const now = new Date();
   const monthKey = `monthlyTop16-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   localStorage.setItem(monthKey, JSON.stringify(sortedTeams));
-  updateMonthDropdown(); // update the dropdown list
 }
 
 function updateMonthDropdown() {
@@ -535,20 +528,10 @@ function viewSelectedMonthlyTop16() {
   });
 }
 
-  function updateAll() {
-  saveToStorage();
-  updatePlayerTable();
-  updateLeaderboard();
-  updateTeamTally();
-  saveMonthlyTop16Teams();
-  updateMonthDropdown();
-}
-
-
 updateAll();
-  updateMonthDropdown();
-
+updateMonthDropdown();
 </script>
+
 
 </body>
 </html>
