@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Tournament App with Team Medal Tally</title>
-  <style>
-    * {
+<meta charset="UTF-8" />
+<title>Tournament App with Team Medal Tally</title>
+<style>
+/* You can keep your existing CSS unchanged */
+   * {
     box-sizing: border-box; color: blue;
        font-weight: bold; font-style: italic;
   }
@@ -150,7 +151,9 @@
       padding: 6px;
     }
   }
-  </style>
+  
+  
+</style>
 </head>
 <body>
 
@@ -185,26 +188,17 @@
     <tr><th>#</th><th>Name</th><th>Competitors</th><th>Prize</th><th>Winner</th><th>Runner-up</th><th>Third</th><th>4th</th><th>5th</th><th>6th</th><th>Action</th></tr>
   </table>
 </div>
-  
- 
- 
-  
 
 <div class="section">
   <h5>🏅 Leaderboard (Points Based)</h5>
-  
-  <div style="margin-bottom:10px;">
   <input type="text" id="leaderboardSearch" placeholder="Search by player or team" oninput="filterLeaderboard()" style="width: 300px; padding: 8px; font-size: 14px;"/>
-</div>
   <table id="leaderboardTable">
     <tr><th>Serial</th><th>Rank</th><th>Player</th><th>Team</th><th>Wins</th><th>Losses</th><th>Prize</th><th>Points</th><th>Gold</th><th>Silver</th><th>Bronze</th></tr>
   </table>
 </div>
 
- 
-
 <div class="section">
-  <h4>📅 Monthly Top 20</h4>
+  <h4>📅 Monthly Top 20 (Current)</h4>
   <table id="monthlyTop"><tr><th>Rank</th><th>Player</th><th>Team</th><th>Points</th></tr></table>
 </div>
 
@@ -212,8 +206,8 @@
   <h5>💼 Team Medal Tally</h5>
   <table id="teamTally"><tr><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr></table>
 </div>
- 
-  <div class="section">
+
+<div class="section">
   <h5>📅 Monthly Top 16 Teams</h5>
   <select id="monthSelector" onchange="viewSelectedMonthlyTop16()">
     <option value="">-- Select Month --</option>
@@ -223,10 +217,37 @@
   </table>
 </div>
 
-  
+<div class="section">
+  <h5>📅 Monthly Top 20 Players</h5>
+  <select id="monthPlayerSelector" onchange="viewSelectedMonthlyTop20()">
+    <option value="">-- Select Month --</option>
+  </select>
+  <table id="monthlyTop20Table">
+    <tr><th>Rank</th><th>Player</th><th>Team</th><th>Points</th></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h5>📅 Monthly Team Individual Rankings</h5>
+  <select id="monthTeamRankingSelector" onchange="viewSelectedMonthlyTeamRanking()">
+    <option value="">-- Select Month --</option>
+  </select>
+  <table id="monthlyTeamRankingTable">
+    <tr><th>Rank</th><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h5>📊 All-Time Team Rankings</h5>
+  <table id="allTimeTeamTable">
+    <tr><th>Rank</th><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>
+  </table>
+</div>
 
 <script>
-let players = JSON.parse(localStorage.getItem("players")) || [];
+// Your existing JS + the following additions
+  
+  let players = JSON.parse(localStorage.getItem("players")) || [];
 let stats = JSON.parse(localStorage.getItem("stats")) || {};
 let matches = JSON.parse(localStorage.getItem("matches")) || [];
 
@@ -403,80 +424,42 @@ function deleteMatch(index) {
   updateAll();
 }
 
+  
+  
+
 function updateTop20() {
+  const now = new Date();
+  const monthKey = `monthlyTop20-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
   const top = [...players].map(p => ({ ...p, points: stats[p.name].points }))
     .sort((a, b) => b.points - a.points).slice(0, 20);
 
-  localStorage.setItem("monthlyTop20", JSON.stringify(top));
+  localStorage.setItem(monthKey, JSON.stringify(top));
   renderTopTable("monthlyTop", top);
+  updateMonthPlayerDropdown();
 }
 
-function renderTopTable(id, data) {
-  const table = document.getElementById(id);
+function updateMonthPlayerDropdown() {
+  const dropdown = document.getElementById("monthPlayerSelector");
+  const allKeys = Object.keys(localStorage).filter(k => k.startsWith("monthlyTop20-"));
+  dropdown.innerHTML = `<option value="">-- Select Month --</option>`;
+  allKeys.sort().reverse().forEach(k => {
+    const label = k.replace("monthlyTop20-", "").replace("-", " / ");
+    dropdown.innerHTML += `<option value="${k}">${label}</option>`;
+  });
+}
+
+function viewSelectedMonthlyTop20() {
+  const key = document.getElementById("monthPlayerSelector").value;
+  const data = JSON.parse(localStorage.getItem(key)) || [];
+  const table = document.getElementById("monthlyTop20Table");
   table.innerHTML = "<tr><th>Rank</th><th>Player</th><th>Team</th><th>Points</th></tr>";
   data.forEach((p, i) => {
     table.innerHTML += `<tr><td>${i + 1}</td><td>${p.name}</td><td>${p.team}</td><td>${p.points}</td></tr>`;
   });
 }
 
-function editPrize(playerName, value) {
-  let val = value.replace(/\$/g, '').trim();
-  let num = parseFloat(val);
-  if (isNaN(num) || num < 0) {
-    alert("Invalid prize value.");
-    updateLeaderboard();
-    return;
-  }
-  stats[playerName].prize = num;
-  saveToStorage();
-  updateLeaderboard();
-}
-
-function editPoints(playerName, value) {
-  let num = parseInt(value.trim());
-  if (isNaN(num) || num < 0) {
-    alert("Invalid points value.");
-    updateLeaderboard();
-    return;
-  }
-  stats[playerName].points = num;
-  saveToStorage();
-  updateLeaderboard();
-}
-
-function filterLeaderboard() {
-  updateLeaderboard();
-}
-
-function updateMatchTable() {
-  const table = document.getElementById("matchTable");
-  table.innerHTML = "<tr><th>#</th><th>Name</th><th>Competitors</th><th>Prize</th><th>Winner</th><th>Runner-up</th><th>Third</th><th>4th</th><th>5th</th><th>6th</th><th>Action</th></tr>";
-  matches.forEach((m, i) => {
-    table.innerHTML += `<tr><td>${i + 1}</td><td>${m.name}</td><td>${m.comp.join(", ")}</td><td>$${m.prize}</td>
-      <td>${m.win}</td><td>${m.run}</td><td>${m.third}</td><td>${m.fourth}</td><td>${m.fifth}</td><td>${m.sixth}</td>
-      <td><button onclick="deleteMatch(${i})">Delete</button></td></tr>`;
-  });
-}
-
-function updateTeamTally() {
-  const tally = {};
-  players.forEach(p => {
-    if (!tally[p.team]) tally[p.team] = { gold: 0, silver: 0, bronze: 0, points: 0 };
-    const s = stats[p.name];
-    tally[p.team].gold += s.gold;
-    tally[p.team].silver += s.silver;
-    tally[p.team].bronze += s.bronze;
-    tally[p.team].points += s.points;
-  });
-  const table = document.getElementById("teamTally");
-  table.innerHTML = "<tr><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>";
-  Object.keys(tally).sort((a, b) => tally[b].points - tally[a].points).forEach(team => {
-    const t = tally[team];
-    table.innerHTML += `<tr><td>${team}</td><td>${t.gold}</td><td>${t.silver}</td><td>${t.bronze}</td><td>${t.points}</td></tr>`;
-  });
-}
-
-function saveMonthlyTop16Teams() {
+function updateAllTimeTeamTable() {
   const tally = {};
   players.forEach(p => {
     if (!tally[p.team]) tally[p.team] = { gold: 0, silver: 0, bronze: 0, points: 0 };
@@ -487,38 +470,62 @@ function saveMonthlyTop16Teams() {
     tally[p.team].points += s.points;
   });
 
-  const sortedTeams = Object.entries(tally)
+  const table = document.getElementById("allTimeTeamTable");
+  table.innerHTML = "<tr><th>Rank</th><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>";
+
+  Object.entries(tally)
     .sort((a, b) => b[1].points - a[1].points)
-    .slice(0, 16)
-    .map(([team, data], index) => ({
-      rank: index + 1,
-      team,
-      ...data
-    }));
-
-  const now = new Date();
-  const monthKey = `monthlyTop16-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  localStorage.setItem(monthKey, JSON.stringify(sortedTeams));
+    .forEach(([team, data], index) => {
+      table.innerHTML += `<tr>
+        <td>${index + 1}</td>
+        <td>${team}</td>
+        <td>${data.gold}</td>
+        <td>${data.silver}</td>
+        <td>${data.bronze}</td>
+        <td>${data.points}</td>
+      </tr>`;
+    });
 }
 
-function updateMonthDropdown() {
-  const dropdown = document.getElementById("monthSelector");
-  const allKeys = Object.keys(localStorage).filter(k => k.startsWith("monthlyTop16-"));
+// NEW: Save Monthly Team Rankings
+function saveMonthlyTeamRankings() {
+  const now = new Date();
+  const monthKey = `monthlyTeamRankings-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  const tally = {};
+  players.forEach(p => {
+    if (!tally[p.team]) tally[p.team] = { team: p.team, gold: 0, silver: 0, bronze: 0, points: 0 };
+    const s = stats[p.name];
+    tally[p.team].gold += s.gold;
+    tally[p.team].silver += s.silver;
+    tally[p.team].bronze += s.bronze;
+    tally[p.team].points += s.points;
+  });
+
+  const teamArray = Object.values(tally).sort((a, b) => b.points - a.points);
+
+  localStorage.setItem(monthKey, JSON.stringify(teamArray));
+  updateMonthTeamRankingDropdown();
+}
+
+function updateMonthTeamRankingDropdown() {
+  const dropdown = document.getElementById("monthTeamRankingSelector");
+  const allKeys = Object.keys(localStorage).filter(k => k.startsWith("monthlyTeamRankings-"));
   dropdown.innerHTML = `<option value="">-- Select Month --</option>`;
   allKeys.sort().reverse().forEach(k => {
-    const label = k.replace("monthlyTop16-", "").replace("-", " / ");
+    const label = k.replace("monthlyTeamRankings-", "").replace("-", " / ");
     dropdown.innerHTML += `<option value="${k}">${label}</option>`;
   });
 }
 
-function viewSelectedMonthlyTop16() {
-  const key = document.getElementById("monthSelector").value;
+function viewSelectedMonthlyTeamRanking() {
+  const key = document.getElementById("monthTeamRankingSelector").value;
   const data = JSON.parse(localStorage.getItem(key)) || [];
-  const table = document.getElementById("monthlyTop16Table");
+  const table = document.getElementById("monthlyTeamRankingTable");
   table.innerHTML = "<tr><th>Rank</th><th>Team</th><th>Gold</th><th>Silver</th><th>Bronze</th><th>Total Points</th></tr>";
-  data.forEach(team => {
+  data.forEach((team, i) => {
     table.innerHTML += `<tr>
-      <td>${team.rank}</td>
+      <td>${i + 1}</td>
       <td>${team.team}</td>
       <td>${team.gold}</td>
       <td>${team.silver}</td>
@@ -528,10 +535,24 @@ function viewSelectedMonthlyTop16() {
   });
 }
 
-updateAll();
-updateMonthDropdown();
-</script>
+function updateAll() {
+  saveToStorage();
+  updatePlayerTable();
+  updateSelects();
+  updateLeaderboard();
+  updateMatchTable();
+  updateTop20();
+  updateTeamTally();
+  saveMonthlyTop16Teams();
+  saveMonthlyTeamRankings(); 
+  updateMonthDropdown();
+  updateMonthPlayerDropdown();
+  updateMonthTeamRankingDropdown(); 
+  updateAllTimeTeamTable();
+}
 
+updateAll();
+</script>
 
 </body>
 </html>
